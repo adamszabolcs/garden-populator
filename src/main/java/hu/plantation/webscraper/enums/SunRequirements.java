@@ -12,8 +12,8 @@ public enum SunRequirements {
 
     String value;
 
-    // Reverse-lookup map for getting a day from an abbreviation
-    private static final Map<String, SunRequirements> lookup = new HashMap<String, SunRequirements>();
+    // Reverse-lookup map for getting a sunRequirement from its value
+    private static final Map<String, SunRequirements> lookup = new HashMap<>();
 
     static {
         for (SunRequirements d : SunRequirements.values()) {
@@ -21,7 +21,7 @@ public enum SunRequirements {
         }
     }
 
-    private SunRequirements(String value) {
+    SunRequirements(String value) {
         this.value = value;
     }
 

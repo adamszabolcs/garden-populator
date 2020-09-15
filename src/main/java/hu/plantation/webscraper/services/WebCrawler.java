@@ -2,6 +2,7 @@ package hu.plantation.webscraper.services;
 
 import hu.plantation.webscraper.enums.SunRequirements;
 import hu.plantation.webscraper.enums.WaterRequirements;
+import hu.plantation.webscraper.exceptions.WrongEnumException;
 import hu.plantation.webscraper.model.Plant;
 import hu.plantation.webscraper.config.PropertyConfig;
 import org.jsoup.Jsoup;
@@ -45,9 +46,9 @@ public class WebCrawler {
                         list.add(td.getElementsByTag("a").first().attr("href"));
                     }
                 }
-                populatePlants(list, webPageName);
             }
-        } catch (IOException e) {
+            populatePlants(list, webPageName);
+        } catch (IOException | WrongEnumException e) {
             e.printStackTrace();
         }
 
@@ -59,52 +60,57 @@ public class WebCrawler {
      * @param list - the list of the urls
      * @throws IOException - if the given url not exists.
      */
-    private void populatePlants(Set<String> list, String webPageName) throws IOException {
+    private void populatePlants(Set<String> list, String webPageName) throws IOException, WrongEnumException {
         for (String url : list) {
             Document document = Jsoup.connect(webPageName + url).get();
             String plantName = document.getElementsByClass("page-header").first().text();
-            String plantSimpleNameString = "";
-            String plantScientificName = "";
+            String plantSimpleName = "";
+            String plantScientificName;
             // If there is not a bracket in the name, then its only the scientific name.
             if (plantName.contains("(")) {
-                plantSimpleNameString = plantName.substring(0, plantName.indexOf("(") - 1);
+                plantSimpleName = plantName.substring(0, plantName.indexOf("(") - 1);
                 plantScientificName = plantName.substring(plantName.indexOf("(") + 1, plantName.indexOf(")"));
-            } else {
+            } else
                 plantScientificName = plantName;
-            }
-            List<SunRequirements> sunRequirementsList = new ArrayList<>();
-            // some plants didn't have the Sun Requirements row on the table, that's why this is a needed step.
-            Element sunReqElement = document.getElementsContainingOwnText("Sun Requirements").first();
-            if (sunReqElement != null) {
-                String[] splittedSunElements = sunReqElement.nextElementSibling()
-                        .html().split("<br>");
-                for (String elem : splittedSunElements) {
-                    if (elem.trim().startsWith("<span>")) {
-                        elem = elem.substring(elem.indexOf(">") + 1, elem.indexOf("</span>"));
-                    }
-                    sunRequirementsList.add(SunRequirements.get(elem.trim()));
-                }
-            }
 
-            List<WaterRequirements> waterRequirementsList = new ArrayList<>();
-            // some plants didn't have the Water Preferences row on the table, that's why this is a needed step.
-            Element wateringElement = document.getElementsContainingOwnText("Water preferences").first();
-            if (wateringElement != null) {
-                String[] splittedWateringElements = document.getElementsContainingOwnText("Water preferences")
-                        .first().nextElementSibling()
-                        .html().split("<br>");
-                for (String elem : splittedWateringElements) {
-                    if (elem.trim().startsWith("<span")) {
-                        elem = elem.substring(elem.indexOf(">") + 1, elem.indexOf("</span>"));
-                    }
-                    waterRequirementsList.add(WaterRequirements.get(elem));
-                }
-            }
+            List<SunRequirements> sunRequirementsList = getElements(document, "sun", "Sun Requirements");
+
+            List<WaterRequirements> waterRequirementsList = getElements(document, "water", "Water Preferences");
+
             String height = document.getElementsContainingOwnText("Plant Height").parents().eq(1).next().text();
 
-            Plant plant = Plant.builder().simpleName(plantSimpleNameString).scientificName(plantScientificName).sunReq(sunRequirementsList).watering(waterRequirementsList).height(height).build();
+            Plant plant = Plant.builder()
+                    .simpleName(plantSimpleName)
+                    .scientificName(plantScientificName)
+                    .sunReq(sunRequirementsList)
+                    .watering(waterRequirementsList)
+                    .height(height)
+                    .build();
             System.out.println(plant.toString());
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private <E extends Enum<E>> List<E> getElements(Document document, String req, String ownText) throws WrongEnumException {
+
+        List<E> resultList = new ArrayList<>();
+        Element element = document.getElementsContainingOwnText(ownText).first();
+        if (element != null) {
+            String[] splittedElement = element.nextElementSibling().html().split("<br>");
+            for (String elem : splittedElement) {
+                if (elem.trim().startsWith("<span")) {
+                    elem = elem.substring(elem.indexOf(">") + 1, elem.indexOf("</span>"));
+                }
+                if (req.equals("sun")) {
+                    resultList.add((E) SunRequirements.get(elem.trim()));
+                } else if (req.equals("water")) {
+                    resultList.add((E) WaterRequirements.get(elem.trim()));
+                } else {
+                    throw new WrongEnumException("No enumtype found to the given String " + req + ".");
+                }
+            }
+        }
+        return resultList;
     }
 
 }
