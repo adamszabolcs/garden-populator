@@ -6,11 +6,13 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @EnableAutoConfiguration
 @EnableConfigurationProperties(PropertyConfig.class)
 @ComponentScan(basePackages = {"hu.plantation.webscraper"})
+@EnableScheduling
 public class Main {
 
     public static void main(String[] args) {
