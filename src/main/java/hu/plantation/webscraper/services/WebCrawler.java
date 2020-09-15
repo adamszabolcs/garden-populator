@@ -9,6 +9,8 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -30,28 +32,39 @@ import java.util.Set;
 @Component
 public class WebCrawler {
 
+    private static final Logger LOG = LoggerFactory.getLogger(WebCrawler.class);
+
     @Autowired
     PropertyConfig propertyConfig;
 
     public void getPageLinks() {
         try {
+            LOG.info("--- getPageLinks method started! ---");
             Set<String> list = new HashSet<>();
             String webPageName = "https://garden.org";
+            int i = 1;
             for (String url : propertyConfig.getUrls()) {
-                Document document = Jsoup.connect(url).get();
-                Element body = document.getElementsByClass("panel-body").first();
-                Elements tdElements = body.getElementsByAttribute("data-th");
-                for (Element td : tdElements) {
-                    if (!StringUtils.isEmpty(td.text())) {
-                        list.add(td.getElementsByTag("a").first().attr("href"));
+                try {
+                    LOG.info("--- URL no. " + i + " ---");
+                    Document document = Jsoup.connect(url).get();
+                    Element body = document.getElementsByClass("panel-body").first();
+                    Elements tdElements = body.getElementsByAttribute("data-th");
+                    for (Element td : tdElements) {
+                        if (!StringUtils.isEmpty(td.text())) {
+                            list.add(td.getElementsByTag("a").first().attr("href"));
+                        }
                     }
+                    i++;
+                } catch (Exception e) {
+                    LOG.info("Error occurred, continuing with URL no. " + ++i);
                 }
             }
+            LOG.info("URL List populated, there are " + list.size() + " plants in the list!");
             populatePlants(list, webPageName);
         } catch (IOException | WrongEnumException e) {
             e.printStackTrace();
         }
-
+        LOG.info("--- getPageLinks method finished! ---");
     }
 
     /**
@@ -61,33 +74,41 @@ public class WebCrawler {
      * @throws IOException - if the given url not exists.
      */
     private void populatePlants(Set<String> list, String webPageName) throws IOException, WrongEnumException {
+        LOG.info("--- Population started! ---");
+        int i = 0;
         for (String url : list) {
-            Document document = Jsoup.connect(webPageName + url).get();
-            String plantName = document.getElementsByClass("page-header").first().text();
-            String plantSimpleName = "";
-            String plantScientificName;
-            // If there is not a bracket in the name, then its only the scientific name.
-            if (plantName.contains("(")) {
-                plantSimpleName = plantName.substring(0, plantName.indexOf("(") - 1);
-                plantScientificName = plantName.substring(plantName.indexOf("(") + 1, plantName.indexOf(")"));
-            } else
-                plantScientificName = plantName;
+            try {
+                Document document = Jsoup.connect(webPageName + url).get();
+                String plantName = document.getElementsByClass("page-header").first().text();
+                String plantSimpleName = "";
+                String plantScientificName;
+                // If there is not a bracket in the name, then its only the scientific name.
+                if (plantName.contains("(")) {
+                    plantSimpleName = plantName.substring(0, plantName.indexOf("(") - 1);
+                    plantScientificName = plantName.substring(plantName.indexOf("(") + 1, plantName.indexOf(")"));
+                } else
+                    plantScientificName = plantName;
 
-            List<SunRequirements> sunRequirementsList = getElements(document, "sun", "Sun Requirements");
+                List<SunRequirements> sunRequirementsList = getElements(document, "sun", "Sun Requirements");
 
-            List<WaterRequirements> waterRequirementsList = getElements(document, "water", "Water Preferences");
+                List<WaterRequirements> waterRequirementsList = getElements(document, "water", "Water Preferences");
 
-            String height = document.getElementsContainingOwnText("Plant Height").parents().eq(1).next().text();
+                String height = document.getElementsContainingOwnText("Plant Height").parents().eq(1).next().text();
 
-            Plant plant = Plant.builder()
-                    .simpleName(plantSimpleName)
-                    .scientificName(plantScientificName)
-                    .sunReq(sunRequirementsList)
-                    .watering(waterRequirementsList)
-                    .height(height)
-                    .build();
-            System.out.println(plant.toString());
+                Plant plant = Plant.builder()
+                        .simpleName(plantSimpleName)
+                        .scientificName(plantScientificName)
+                        .sunReq(sunRequirementsList)
+                        .watering(waterRequirementsList)
+                        .height(height)
+                        .build();
+                i++;
+                LOG.info("--- Plant no. " + i + " added! ---");
+            } catch (Exception e) {
+                LOG.info("Error occurred, continuing!");
+            }
         }
+        LOG.info("--- Population ended, added " + i + " plants to database!");
     }
 
     @SuppressWarnings("unchecked")
