@@ -5,6 +5,7 @@ import hu.plantation.webscraper.enums.WaterRequirements;
 import hu.plantation.webscraper.exceptions.WrongEnumException;
 import hu.plantation.webscraper.model.Plant;
 import hu.plantation.webscraper.config.PropertyConfig;
+import hu.plantation.webscraper.repository.PlantRepository;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -12,13 +13,11 @@ import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -29,13 +28,16 @@ import java.util.Set;
  * @version 0.1
  * @since 2020-09-13
  */
-@Component
+@Service
 public class WebCrawler {
 
     private static final Logger LOG = LoggerFactory.getLogger(WebCrawler.class);
 
     @Autowired
     PropertyConfig propertyConfig;
+
+    @Autowired
+    PlantRepository plantRepository;
 
     public void getPageLinks() {
         try {
@@ -89,19 +91,20 @@ public class WebCrawler {
                 } else
                     plantScientificName = plantName;
 
-                List<SunRequirements> sunRequirementsList = getElements(document, "sun", "Sun Requirements");
+                Set<SunRequirements> sunRequirementsList = getElements(document, "sun", "Sun Requirements");
 
-                List<WaterRequirements> waterRequirementsList = getElements(document, "water", "Water Preferences");
+                Set<WaterRequirements> waterRequirementsList = getElements(document, "water", "Water Preferences");
 
                 String height = document.getElementsContainingOwnText("Plant Height").parents().eq(1).next().text();
 
                 Plant plant = Plant.builder()
                         .simpleName(plantSimpleName)
                         .scientificName(plantScientificName)
-                        .sunReq(sunRequirementsList)
-                        .watering(waterRequirementsList)
+                        //.sunReq(sunRequirementsList)
+                        //.watering(waterRequirementsList)
                         .height(height)
                         .build();
+                plantRepository.save(plant);
                 i++;
                 LOG.info("--- Plant no. " + i + " added! ---");
             } catch (Exception e) {
@@ -112,9 +115,9 @@ public class WebCrawler {
     }
 
     @SuppressWarnings("unchecked")
-    private <E extends Enum<E>> List<E> getElements(Document document, String req, String ownText) throws WrongEnumException {
+    private <E extends Enum<E>> Set<E> getElements(Document document, String req, String ownText) throws WrongEnumException {
 
-        List<E> resultList = new ArrayList<>();
+        Set<E> resultSet = new HashSet<>();
         Element element = document.getElementsContainingOwnText(ownText).first();
         if (element != null) {
             String[] splittedElement = element.nextElementSibling().html().split("<br>");
@@ -123,15 +126,15 @@ public class WebCrawler {
                     elem = elem.substring(elem.indexOf(">") + 1, elem.indexOf("</span>"));
                 }
                 if (req.equals("sun")) {
-                    resultList.add((E) SunRequirements.get(elem.trim()));
+                    resultSet.add((E) SunRequirements.get(elem.trim()));
                 } else if (req.equals("water")) {
-                    resultList.add((E) WaterRequirements.get(elem.trim()));
+                    resultSet.add((E) WaterRequirements.get(elem.trim()));
                 } else {
                     throw new WrongEnumException("No enumtype found to the given String " + req + ".");
                 }
             }
         }
-        return resultList;
+        return resultSet;
     }
 
 }

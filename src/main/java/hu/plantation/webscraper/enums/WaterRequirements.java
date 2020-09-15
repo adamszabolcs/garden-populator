@@ -1,8 +1,10 @@
 package hu.plantation.webscraper.enums;
 
+import javax.persistence.Entity;
 import java.util.HashMap;
 import java.util.Map;
 
+@Entity(name = "Watering")
 public enum WaterRequirements {
     IN_WATER("In Water"),
     WET("Wet"),
