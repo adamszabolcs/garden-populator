@@ -6,12 +6,12 @@ import lombok.*;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
-import java.util.Set;
+import java.util.Collection;
 import java.util.UUID;
 
 @Builder
 @Getter
-@Entity(name = "Plant")
+@Entity(name = "plant")
 public class Plant {
 
     @Id
@@ -30,16 +30,16 @@ public class Plant {
     private String scientificName;
 
     @ElementCollection(targetClass = SunRequirements.class)
-    @JoinTable(name = "Plant-Sun join", joinColumns = @JoinColumn(name = "plantid"))
-    @Column(name = "sunid")
-    @Enumerated(EnumType.ORDINAL)
-    private Set<SunRequirements> sunReq;
+    @JoinTable(name = "plantsun", joinColumns = @JoinColumn(name = "plant_id"))
+    @Column(name = "value")
+    @Enumerated(EnumType.STRING)
+    private Collection<SunRequirements> sun;
 
     @ElementCollection(targetClass = WaterRequirements.class)
-    @JoinTable(name = "Plant-Water join", joinColumns = @JoinColumn(name = "plantid"))
-    @Column(name = "waterid")
-    @Enumerated(EnumType.ORDINAL)
-    private Set<WaterRequirements> watering;
+    @JoinTable(name = "plantwater", joinColumns = @JoinColumn(name = "plant_id"))
+    @Column(name = "value")
+    @Enumerated(EnumType.STRING)
+    private Collection<WaterRequirements> watering;
 
     @Column(name = "height")
     private String height;
@@ -49,7 +49,7 @@ public class Plant {
         return "Plant{" +
                 "simpleName='" + simpleName + '\'' +
                 ", scientificName='" + scientificName + '\'' +
-                ", sunReq=" + sunReq +
+                ", sunReq=" + sun +
                 ", watering=" + watering +
                 ", height='" + height + '\'' +
                 '}';
