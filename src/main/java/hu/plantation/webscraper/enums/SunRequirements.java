@@ -1,10 +1,8 @@
 package hu.plantation.webscraper.enums;
 
-import javax.persistence.Entity;
 import java.util.HashMap;
 import java.util.Map;
 
-@Entity(name = "Sun Requirements")
 public enum SunRequirements {
     FULL_SUN("Full Sun"),
     FULL_SUN_PARTIAL_SHADE("Full Sun to Partial Shade"),
