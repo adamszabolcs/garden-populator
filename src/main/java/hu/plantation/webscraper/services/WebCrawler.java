@@ -100,8 +100,8 @@ public class WebCrawler {
                 Plant plant = Plant.builder()
                         .simpleName(plantSimpleName)
                         .scientificName(plantScientificName)
-                        //.sunReq(sunRequirementsList)
-                        //.watering(waterRequirementsList)
+                        .sun(sunRequirementsList)
+                        .watering(waterRequirementsList)
                         .height(height)
                         .build();
                 plantRepository.save(plant);
