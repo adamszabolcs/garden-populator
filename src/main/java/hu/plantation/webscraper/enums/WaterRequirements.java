@@ -15,14 +15,14 @@ public enum WaterRequirements {
     // Reverse-lookup map for getting a waterRequirement from its value
     private static final Map<String, WaterRequirements> lookup = new HashMap<>();
 
+    WaterRequirements(String value) {
+        this.value = value;
+    }
+
     static {
         for (WaterRequirements d : WaterRequirements.values()) {
             lookup.put(d.getValue(), d);
         }
-    }
-
-    WaterRequirements(String value) {
-        this.value = value;
     }
 
     public String getValue() {
